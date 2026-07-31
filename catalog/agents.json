@@ -1,4 +1,35 @@
 {
   "schema_version": 2,
-  "modules": []
+  "modules": [
+    {
+      "id": "chinese-output-style",
+      "description": "Use direct Chinese prose and established target-domain terminology in replies and documents.",
+      "path": "agents/modules/chinese-output-style.md",
+      "recommended": true
+    },
+    {
+      "id": "github-markdown-default",
+      "description": "Make GitHub Flavored Markdown the default for created or substantially revised Markdown files.",
+      "path": "agents/modules/github-markdown-default.md",
+      "recommended": true
+    },
+    {
+      "id": "destructive-operation-confirmation",
+      "description": "Require an exact impact and recovery review plus renewed user confirmation before destructive actions.",
+      "path": "agents/modules/destructive-operation-confirmation.md",
+      "recommended": true
+    },
+    {
+      "id": "first-principles-review",
+      "description": "Review non-trivial requests by goal, assumptions, constraints, trade-offs, risks, and acceptance criteria.",
+      "path": "agents/modules/first-principles-review.md",
+      "recommended": false
+    },
+    {
+      "id": "git-commit-workflow",
+      "description": "Review Git identity privacy at installation and use a cautious local workflow with bilingual fallback commit messages.",
+      "path": "agents/modules/git-commit-workflow.md",
+      "recommended": false
+    }
+  ]
 }

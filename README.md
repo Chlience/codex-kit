@@ -6,8 +6,9 @@ plugins, and global instruction modules while delegating installation to Codex
 and each upstream project's supported tools.
 
 The catalog starts with a reviewed repository-level source for
-`mattpocock/skills` and the bundled first-party `sjl-skill`. Additional
-capabilities are added only after reviewing their source and desired behavior.
+`mattpocock/skills`, the bundled first-party `sjl-skill`, and five selectable
+global instruction modules. Additional capabilities are added only after
+reviewing their source and desired behavior.
 
 Requirements: Linux, Git, a current Codex CLI, and Python 3.10 or newer.
 Selected upstream installers may add their own runtime requirements.
@@ -68,6 +69,20 @@ then selects individual Skills from that repository.
 - `scripts/codex_kit.py` validates catalogs and safely renders the managed
   global instruction block.
 - `tests/test_codex_kit.py` covers catalog and rendering safety boundaries.
+
+## Included instruction modules
+
+| Module | Purpose | Recommended |
+| --- | --- | --- |
+| `chinese-output-style` | Direct Chinese prose and target-domain technical terminology | Yes |
+| `github-markdown-default` | GitHub-compatible defaults for created or substantially revised Markdown | Yes |
+| `destructive-operation-confirmation` | Exact impact review and renewed confirmation before destructive actions | Yes |
+| `first-principles-review` | Goal, assumption, risk, trade-off, and acceptance-criteria review for substantial requests | No |
+| `git-commit-workflow` | Install-time identity privacy check, cautious local commits, and a bilingual fallback format | No |
+
+Recommendations are advisory; installation still requires an explicit user
+selection. The machine-dependent `rtk` shell rule is deliberately excluded
+from the public catalog.
 
 ## Catalog contracts
 
@@ -186,6 +201,11 @@ the user to select exact Skill names before preparing an installation command.
 - Selected instruction modules are rendered into a marked block in
   `$CODEX_HOME/AGENTS.md`. Codex currently does not expand `@include`
   directives, so the module contents are written into the block.
+- Selecting `git-commit-workflow` starts a Git identity privacy check. The
+  installer asks about the author name and email separately, offers a
+  user-verified GitHub `noreply` address, and defaults to repository-local
+  configuration when a target repository is available. It shows the exact
+  write, resulting identity, and recovery command before applying a change.
 
 ## Safety model
 
@@ -204,6 +224,8 @@ the user to select exact Skill names before preparing an installation command.
   installation. Severe conflicts prevent a successful completion report.
 - Local selections, paths, commits, and backup locations may be recorded in
   `.codex-kit.local.json`, which Git ignores.
+- Git identity values are never stored in the repository or local installation
+  receipt.
 - System-level operations, secrets, `sudo`, and remote-script pipelines require
   separate explicit approval.
 
@@ -219,5 +241,7 @@ licenses and are reviewed separately at installation time.
 - [Build Skills for Codex](https://learn.chatgpt.com/docs/build-skills)
 - [Build Codex plugins](https://developers.openai.com/plugins/build/plugins)
 - [Codex `AGENTS.md` behavior](https://learn.chatgpt.com/docs/agent-configuration/agents-md)
+- [GitHub Flavored Markdown specification](https://github.github.com/gfm/)
+- [GitHub mathematical expressions](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/writing-mathematical-expressions)
 - [`vercel-labs/skills`](https://github.com/vercel-labs/skills)
 - [`mattpocock/skills`](https://github.com/mattpocock/skills)

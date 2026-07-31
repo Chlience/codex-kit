@@ -81,6 +81,48 @@ description, compatibility concerns, and current same-name installation
 status. Wait for the user to select exact Skill names. An empty second
 selection installs nothing from that source.
 
+### Git identity privacy check
+
+Apply this check only when the user selects `git-commit-workflow`.
+
+1. Read the effective Git `user.name` and `user.email` plus the origin and
+   scope of those two values. Do not print or inspect unrelated Git
+   configuration.
+2. Explain that Git stores both values in commit objects and that pushing to a
+   public repository publishes them. Also explain that values entered during
+   setup may remain in the private installation conversation and in the
+   selected Git configuration file.
+3. Ask for the name and email decisions separately:
+   - name: keep the existing value, use the GitHub login, provide a custom
+     value, or defer;
+   - email: keep the existing value, provide an exact GitHub `noreply`
+     address, provide another custom value, or defer.
+4. Query the authenticated GitHub account ID and login only after the user
+   selects a GitHub option and approves use of the existing GitHub CLI
+   identity. Treat an ID-and-login-based `noreply` address as a candidate and
+   require the user to compare it with GitHub Settings > Emails or provide the
+   exact address. Do not query an account email endpoint or expose private
+   account emails.
+5. Ask whether a requested change applies to one exact repository or globally,
+   with repository-local configuration as the privacy-oriented default when a
+   target repository is available. Explain that global identity affects other
+   Git hosting services and may still be overridden by repository-local
+   values.
+6. For each proposed write, show:
+   - the current effective value, origin, and scope;
+   - the target scope's existing value;
+   - the exact configuration file and command;
+   - the expected effective value after the write;
+   - the exact command that restores or removes the changed value.
+7. Treat identity configuration as a separate write in the approval plan. Do
+   not change it until the user approves the exact scope and values.
+8. Never write the selected name or email into this repository, catalog files,
+   or `.codex-kit.local.json`. Record only whether the check was completed,
+   deferred, or failed.
+9. If either value remains incomplete, warn that Git commits will remain
+   unavailable. Offer `user.useConfigOnly=true` as a separate, explicitly
+   approved write to prevent Git from inferring an identity from the machine.
+
 ## 3. Resolve current upstream instructions
 
 For every selected GitHub item:
@@ -185,6 +227,7 @@ root when at least one change succeeds:
 - actual destination;
 - command outcome;
 - backup path;
+- Git identity privacy-check status without the name or email value;
 - installation time.
 
 The file is disposable and Git-ignored. Before writing it, reject a symlink or

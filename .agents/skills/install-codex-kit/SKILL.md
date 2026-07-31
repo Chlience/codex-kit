@@ -47,6 +47,8 @@ Catalog item contracts:
 
 - Skill: `id`, `description`, `repository`; optional `path`, `scope`,
   `recommended`, and `notes`.
+- A Skill entry without `path` represents a repository-level source whose
+  individual Skills require a second explicit user selection.
 - Plugin: `id`, `description`, `repository`; optional `marketplace`, `plugin`,
   `recommended`, and `notes`.
 - Instruction module: `id`, `description`, `path`; optional `recommended`.
@@ -69,6 +71,13 @@ installation status, and recommendation flag. Recommendations are advisory.
 Wait for the user to choose exact IDs. Do not interpret a preselected or
 recommended item as consent.
 
+Selecting a repository-level Skill source authorizes discovery only. After
+resolving and reviewing its current default-branch commit, enumerate its valid
+Skill directories in a second checklist. Show each upstream Skill name,
+description, compatibility concerns, and current same-name installation
+status. Wait for the user to select exact Skill names. An empty second
+selection installs nothing from that source.
+
 ## 3. Resolve current upstream instructions
 
 For every selected third-party item:
@@ -90,14 +99,24 @@ For every selected third-party item:
 
 For standalone Skills:
 
+- Treat a catalog entry with `path` as one selectable Skill. Treat an entry
+  without `path` as a repository-level source and install only the individual
+  upstream Skill names selected in the second checklist.
 - Use Codex `$skill-installer` when it supports the selected GitHub source and
   scope.
 - Use `npx skills@latest` when the upstream recommends the Vercel Skills CLI.
-- With `npx skills`, first list the repository's Skills using `--list`.
-  Construct the installation command with explicit `--skill` values and an
-  explicit target Agent and scope. Never execute a bare multi-Skill
-  `npx skills add <repository>` command from an Agent session because it may
-  enter non-interactive mode and select every Skill.
+- With `npx skills`, use the same exact-commit GitHub tree URL or verified
+  local snapshot for both `--list` and installation. For example, resolve
+  `mattpocock/skills` and use
+  `https://github.com/mattpocock/skills/tree/<resolved-commit-sha>` when the
+  reviewed CLI version supports exact tree URLs. Otherwise use one reviewed
+  local snapshot for both operations; do not fall back to the mutable
+  repository shorthand.
+- First list the repository's Skills using `--list`. Construct the installation
+  command with explicit `--skill` values and an explicit target Agent and
+  scope. Never execute a bare multi-Skill `npx skills add <repository>` command
+  from an Agent session because it may enter non-interactive mode and select
+  every Skill.
 - Install the complete Skill directory, including scripts, references, assets,
   and licenses.
 

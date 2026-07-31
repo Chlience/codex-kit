@@ -5,8 +5,9 @@ Codex capabilities between Linux machines. It keeps a catalog of Skills,
 plugins, and global instruction modules while delegating installation to Codex
 and each upstream project's supported tools.
 
-The initial catalogs are intentionally empty. Add concrete capabilities only
-after reviewing their source and desired behavior.
+The catalog starts with a reviewed repository-level source for
+`mattpocock/skills`. Additional capabilities are added only after reviewing
+their source and desired behavior.
 
 Requirements: Linux, Git, a current Codex CLI, and Python 3.10 or newer.
 Selected upstream installers may add their own runtime requirements.
@@ -22,12 +23,14 @@ Use $install-codex-kit to set up this machine from the current repository.
 
 The installer presents separate lists for:
 
-1. standalone Skills;
+1. standalone Skills and repository-level Skill sources;
 2. Codex plugins;
 3. global `AGENTS.md` modules.
 
 Nothing is installed until the user selects items and approves the resulting
-commands, paths, and configuration diff.
+commands, paths, and configuration diff. Selecting a repository-level source
+opens a second checklist populated from the reviewed upstream commit; the user
+then selects individual Skills from that repository.
 
 ## Repository layout
 
@@ -113,6 +116,11 @@ Instruction paths must match `agents/modules/*.md`. Unknown fields, duplicate
 JSON keys, control characters, symlinks, and reserved Codex Kit markers are
 rejected where applicable.
 
+For a repository containing multiple Skills, omit `path` to register it as a
+repository-level source. Selecting that source authorizes read-only discovery.
+The installer lists the Skills from the resolved upstream commit and requires
+the user to select exact Skill names before preparing an installation command.
+
 ## Extending the kit
 
 1. Add one catalog entry with a short description and the upstream GitHub
@@ -133,6 +141,8 @@ rejected where applicable.
 
 - Third-party repositories are read at installation time from their current
   default branch.
+- Repository-level Skill sources are expanded at installation time. Their
+  changing upstream inventory is not copied into this repository.
 - Each installation run resolves the latest default-branch commit, reviews that
   exact tree, and binds the approved transaction to the reviewed commit or
   content digest. A later run resolves the latest commit again; the catalog
@@ -177,3 +187,4 @@ rejected where applicable.
 - [Build Codex plugins](https://developers.openai.com/plugins/build/plugins)
 - [Codex `AGENTS.md` behavior](https://learn.chatgpt.com/docs/agent-configuration/agents-md)
 - [`vercel-labs/skills`](https://github.com/vercel-labs/skills)
+- [`mattpocock/skills`](https://github.com/mattpocock/skills)

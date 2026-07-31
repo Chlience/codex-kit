@@ -1,4 +1,13 @@
 {
   "schema_version": 1,
-  "skills": []
+  "skills": [
+    {
+      "id": "mattpocock-skills",
+      "description": "Choose individual engineering and productivity Skills from Matt Pocock's upstream collection.",
+      "repository": "https://github.com/mattpocock/skills",
+      "scope": "user",
+      "recommended": false,
+      "notes": "Repository-level source. The upstream Codex entry point is npx skills@latest add mattpocock/skills. Resolve latest to a reviewed tool version, then use the same exact default-branch HEAD or verified local snapshot for enumeration and installation. Install only exact Skill names selected by the user for Codex and the approved scope. Include setup-matt-pocock-skills when required by the selected workflow, then run the fresh-process global conflict audit."
+    }
+  ]
 }

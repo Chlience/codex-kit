@@ -1,0 +1,6 @@
+interface:
+  display_name: "Install Codex Kit"
+  short_description: "Install selected Codex capabilities safely"
+  default_prompt: "Use $install-codex-kit to install selected skills, plugins, and AGENTS.md modules on this Linux machine."
+policy:
+  allow_implicit_invocation: false

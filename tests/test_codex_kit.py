@@ -5,6 +5,7 @@ import hashlib
 import os
 from pathlib import Path
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -38,11 +39,53 @@ class CodexKitCliTests(unittest.TestCase):
             "plugins": "plugins",
             "agents": "modules",
         }
-        payload = {"schema_version": 1, array_names[kind]: items}
+        payload = {"schema_version": 2, array_names[kind]: items}
         (self.repo / "catalog" / f"{kind}.json").write_text(
             json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
+
+    def add_bundled_skill(
+        self,
+        skill_id: str = "local-skill",
+        *,
+        frontmatter_name: str | None = None,
+        description: str = "A local test skill",
+        license_name: str = "LICENSE",
+        extra_files: dict[str, str | bytes] | None = None,
+    ) -> Path:
+        path = self.repo / "bundled" / "skills" / skill_id
+        path.mkdir(parents=True)
+        name = frontmatter_name if frontmatter_name is not None else skill_id
+        (path / "SKILL.md").write_text(
+            "---\n"
+            f"name: {name}\n"
+            f"description: {json.dumps(description)}\n"
+            "---\n\n"
+            "# Test skill\n",
+            encoding="utf-8",
+        )
+        (path / license_name).write_text("MIT License\n", encoding="utf-8")
+        for relative, content in (extra_files or {}).items():
+            target = path / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if isinstance(content, bytes):
+                target.write_bytes(content)
+            else:
+                target.write_text(content, encoding="utf-8")
+        return path
+
+    def bundled_entry(
+        self, skill_id: str = "local-skill", **overrides: object
+    ) -> dict[str, object]:
+        entry: dict[str, object] = {
+            "id": skill_id,
+            "description": "Local skill",
+            "source": "bundled",
+            "path": f"bundled/skills/{skill_id}",
+        }
+        entry.update(overrides)
+        return entry
 
     def add_module(
         self, module_id: str, body: str, *, description: str = "Test rules"
@@ -146,6 +189,7 @@ class CodexKitCliTests(unittest.TestCase):
                 {
                     "id": "one",
                     "description": "One",
+                    "source": "github",
                     "repository": "https://github.com/example/one",
                     "unexpected": True,
                 }
@@ -154,11 +198,13 @@ class CodexKitCliTests(unittest.TestCase):
                 {
                     "id": "same",
                     "description": "One",
+                    "source": "github",
                     "repository": "https://github.com/example/one",
                 },
                 {
                     "id": "same",
                     "description": "Two",
+                    "source": "github",
                     "repository": "https://github.com/example/two",
                 },
             ],
@@ -166,6 +212,7 @@ class CodexKitCliTests(unittest.TestCase):
                 {
                     "id": "control",
                     "description": "bad\u0000text",
+                    "source": "github",
                     "repository": "https://github.com/example/control",
                 }
             ],
@@ -186,6 +233,7 @@ class CodexKitCliTests(unittest.TestCase):
                     {
                         "id": "Bad_ID",
                         "description": "Bad ID",
+                        "source": "github",
                         "repository": "https://github.com/example/repo",
                     }
                 ],
@@ -197,6 +245,7 @@ class CodexKitCliTests(unittest.TestCase):
                     {
                         "id": "bad-url",
                         "description": "Bad URL",
+                        "source": "github",
                         "repository": "http://github.com/example/repo",
                     }
                 ],
@@ -208,6 +257,7 @@ class CodexKitCliTests(unittest.TestCase):
                     {
                         "id": "bad-scope",
                         "description": "Bad scope",
+                        "source": "github",
                         "repository": "https://github.com/example/repo",
                         "scope": "global",
                     }
@@ -241,7 +291,7 @@ class CodexKitCliTests(unittest.TestCase):
         )
         result = self.validate()
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("integer 1", result.stderr)
+        self.assertIn("integer 2", result.stderr)
 
     def test_validate_rejects_unsafe_skill_paths(self) -> None:
         unsafe_paths = (
@@ -262,6 +312,7 @@ class CodexKitCliTests(unittest.TestCase):
                         {
                             "id": "unsafe-path",
                             "description": "Unsafe path",
+                            "source": "github",
                             "repository": "https://github.com/example/repo",
                             "path": skill_path,
                         }
@@ -270,6 +321,202 @@ class CodexKitCliTests(unittest.TestCase):
                 result = self.validate()
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("repository-relative POSIX path", result.stderr)
+
+    def test_validate_accepts_github_and_bundled_skill_sources(self) -> None:
+        skill = self.add_bundled_skill(
+            extra_files={
+                "references/guide.md": (
+                    "# Guide\n\n"
+                    "Return to [the Skill](../SKILL.md#test-skill).\n"
+                )
+            }
+        )
+        skill_md = skill / "SKILL.md"
+        skill_md.write_text(
+            skill_md.read_text(encoding="utf-8")
+            + "\nRead the [guide](references/guide.md#guide) and "
+            "[external docs](https://example.com/docs).\n",
+            encoding="utf-8",
+        )
+        self.write_catalog(
+            "skills",
+            [
+                {
+                    "id": "remote-skill",
+                    "description": "Remote skill",
+                    "source": "github",
+                    "repository": "https://github.com/example/repo",
+                    "path": "skills/remote-skill",
+                },
+                self.bundled_entry(),
+            ],
+        )
+
+        result = self.validate()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("2 skill(s)", result.stdout)
+
+    def test_validate_enforces_the_skill_source_discriminated_union(self) -> None:
+        valid_repository = "https://github.com/example/repo"
+        cases: tuple[tuple[dict[str, object], str], ...] = (
+            (
+                {
+                    "id": "missing-source",
+                    "description": "Missing source",
+                    "repository": valid_repository,
+                },
+                "missing required field",
+            ),
+            (
+                {
+                    "id": "unknown-source",
+                    "description": "Unknown source",
+                    "source": "archive",
+                    "repository": valid_repository,
+                },
+                "source must be 'github' or 'bundled'",
+            ),
+            (
+                {
+                    "id": "bad-source-type",
+                    "description": "Bad source type",
+                    "source": True,
+                    "repository": valid_repository,
+                },
+                "source must be str",
+            ),
+            (
+                {
+                    "id": "missing-repository",
+                    "description": "Missing repository",
+                    "source": "github",
+                },
+                "github source requires repository",
+            ),
+            (
+                self.bundled_entry(repository=valid_repository),
+                "bundled source must not include repository",
+            ),
+            (
+                {
+                    "id": "missing-path",
+                    "description": "Missing path",
+                    "source": "bundled",
+                },
+                "bundled source requires path",
+            ),
+            (
+                self.bundled_entry(path="skills/local-skill"),
+                "path must be exactly bundled/skills/local-skill",
+            ),
+            (
+                self.bundled_entry(path="bundled/skills/other-skill"),
+                "path must be exactly bundled/skills/local-skill",
+            ),
+        )
+        for item, expected_error in cases:
+            with self.subTest(expected_error=expected_error):
+                self.write_catalog("skills", [item])
+                result = self.validate()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(expected_error, result.stderr)
+
+    def test_validate_accepts_license_txt_for_a_bundled_skill(self) -> None:
+        self.add_bundled_skill(license_name="LICENSE.txt")
+        self.write_catalog("skills", [self.bundled_entry()])
+
+        result = self.validate()
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_validate_rejects_missing_or_invalid_bundled_skill_metadata(self) -> None:
+        cases = (
+            ("missing SKILL.md", "SKILL.md is required"),
+            ("missing license", "LICENSE or LICENSE.txt is required"),
+            ("wrong name", "frontmatter name must equal catalog id"),
+            ("empty description", "frontmatter description must not be empty"),
+            ("invalid utf8", "SKILL.md is not valid UTF-8"),
+        )
+        for case, expected_error in cases:
+            with self.subTest(case=case):
+                skill = self.add_bundled_skill(
+                    frontmatter_name=(
+                        "different-name" if case == "wrong name" else None
+                    ),
+                    description="" if case == "empty description" else "Description",
+                )
+                if case == "missing SKILL.md":
+                    (skill / "SKILL.md").unlink()
+                elif case == "missing license":
+                    (skill / "LICENSE").unlink()
+                elif case == "invalid utf8":
+                    (skill / "SKILL.md").write_bytes(b"\xff")
+                self.write_catalog("skills", [self.bundled_entry()])
+
+                result = self.validate()
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(expected_error, result.stderr)
+                shutil.rmtree(self.repo / "bundled")
+
+    def test_validate_rejects_forbidden_bundled_skill_artifacts(self) -> None:
+        forbidden_paths = (
+            ".git/config",
+            ".DS_Store",
+            "__pycache__/cache.pyc",
+            ".env",
+            ".env.local",
+            "references/.env.example",
+        )
+        for forbidden_path in forbidden_paths:
+            with self.subTest(path=forbidden_path):
+                self.add_bundled_skill(extra_files={forbidden_path: "local data\n"})
+                self.write_catalog("skills", [self.bundled_entry()])
+
+                result = self.validate()
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("forbidden bundled Skill artifact", result.stderr)
+                shutil.rmtree(self.repo / "bundled")
+
+    def test_validate_rejects_symlinks_and_special_files_in_bundled_skills(
+        self,
+    ) -> None:
+        skill = self.add_bundled_skill()
+        outside = self.repo.parent / "outside.md"
+        outside.write_text("# Outside\n", encoding="utf-8")
+        (skill / "linked.md").symlink_to(outside)
+        self.write_catalog("skills", [self.bundled_entry()])
+
+        result = self.validate()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("non-symlink", result.stderr)
+
+        (skill / "linked.md").unlink()
+        fifo = skill / "events.fifo"
+        os.mkfifo(fifo)
+        result = self.validate()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("regular file or directory", result.stderr)
+
+    def test_validate_rejects_a_symlinked_bundled_skill_ancestor(self) -> None:
+        external = self.repo.parent / "external-bundled"
+        skill = external / "skills" / "local-skill"
+        skill.mkdir(parents=True)
+        (skill / "SKILL.md").write_text(
+            "---\nname: local-skill\ndescription: External\n---\n",
+            encoding="utf-8",
+        )
+        (skill / "LICENSE").write_text("MIT\n", encoding="utf-8")
+        (self.repo / "bundled").symlink_to(external, target_is_directory=True)
+        self.write_catalog("skills", [self.bundled_entry()])
+
+        result = self.validate()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("non-symlink directory", result.stderr)
 
     def test_validate_rejects_unsafe_module_files(self) -> None:
         marker_path = self.add_module(

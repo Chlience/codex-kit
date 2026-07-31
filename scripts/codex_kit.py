@@ -19,13 +19,14 @@ import unicodedata
 from typing import Any, Sequence
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 KEBAB_CASE = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*\Z")
 SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 GITHUB_REPOSITORY = re.compile(
     r"https://github\.com/[A-Za-z0-9][A-Za-z0-9_.-]*/"
     r"[A-Za-z0-9_.-]+(?:\.git)?/?\Z"
 )
+FRONTMATTER_FIELD = re.compile(r"([A-Za-z][A-Za-z0-9_-]*):[ \t]*(.*)\Z")
 
 MANAGED_START = b"<!-- codex-kit:managed:start -->"
 MANAGED_END = b"<!-- codex-kit:managed:end -->"
@@ -49,8 +50,8 @@ CATALOG_SPECS = (
     CatalogSpec(
         "skills.json",
         "skills",
-        frozenset({"id", "description", "repository"}),
-        frozenset({"path", "scope", "recommended", "notes"}),
+        frozenset({"id", "description", "source"}),
+        frozenset({"repository", "path", "scope", "recommended", "notes"}),
     ),
     CatalogSpec(
         "plugins.json",
@@ -275,6 +276,208 @@ def _validate_module_path(repo: Path, path_text: str, context: str) -> tuple[Pat
     return candidate, body
 
 
+def _is_forbidden_bundled_name(name: str) -> bool:
+    return (
+        name in {".git", ".DS_Store", "__pycache__"}
+        or name.startswith(".env")
+    )
+
+
+def _read_bundled_skill_tree(
+    repo: Path, skill_path: str, context: str
+) -> tuple[Path, dict[PurePosixPath, bytes]]:
+    pure = PurePosixPath(skill_path)
+    current = repo
+    for part in pure.parts:
+        current /= part
+        try:
+            current_status = current.lstat()
+        except FileNotFoundError as error:
+            raise CodexKitError(
+                f"{context}.path bundled Skill directory does not exist: {skill_path}"
+            ) from error
+        except OSError as error:
+            raise CodexKitError(
+                f"cannot inspect bundled Skill directory {current}: {error}"
+            ) from error
+        if stat.S_ISLNK(current_status.st_mode) or not stat.S_ISDIR(
+            current_status.st_mode
+        ):
+            raise CodexKitError(
+                f"bundled Skill path component must be a non-symlink directory: "
+                f"{current}"
+            )
+
+    skill_root = current
+    files: dict[PurePosixPath, bytes] = {}
+    pending = [skill_root]
+    while pending:
+        directory = pending.pop()
+        try:
+            directory_status = directory.lstat()
+        except OSError as error:
+            raise CodexKitError(
+                f"cannot inspect bundled Skill directory {directory}: {error}"
+            ) from error
+        if stat.S_ISLNK(directory_status.st_mode) or not stat.S_ISDIR(
+            directory_status.st_mode
+        ):
+            raise CodexKitError(
+                f"bundled Skill directory must be a non-symlink directory: "
+                f"{directory}"
+            )
+
+        try:
+            entries = sorted(os.scandir(directory), key=lambda entry: entry.name)
+        except OSError as error:
+            raise CodexKitError(
+                f"cannot list bundled Skill directory {directory}: {error}"
+            ) from error
+        for entry in entries:
+            candidate = Path(entry.path)
+            relative = PurePosixPath(candidate.relative_to(skill_root).as_posix())
+            if _is_forbidden_bundled_name(entry.name):
+                raise CodexKitError(
+                    f"{context}.path contains forbidden bundled Skill artifact: "
+                    f"{relative}"
+                )
+            try:
+                entry_status = entry.stat(follow_symlinks=False)
+            except OSError as error:
+                raise CodexKitError(
+                    f"cannot inspect bundled Skill entry {candidate}: {error}"
+                ) from error
+            if stat.S_ISLNK(entry_status.st_mode):
+                raise CodexKitError(
+                    f"bundled Skill entry must be non-symlink: {candidate}"
+                )
+            if stat.S_ISDIR(entry_status.st_mode):
+                pending.append(candidate)
+                continue
+            if not stat.S_ISREG(entry_status.st_mode):
+                raise CodexKitError(
+                    f"bundled Skill entry must be a regular file or directory: "
+                    f"{candidate}"
+                )
+            files[relative] = _read_regular_file(
+                candidate, allow_missing=False
+            ).content
+    return skill_root, files
+
+
+def _parse_frontmatter_scalar(
+    raw_value: str, field: str, skill_path: str
+) -> str:
+    value = raw_value.strip()
+    if not value:
+        return ""
+    if value[0] == '"':
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError as error:
+            raise CodexKitError(
+                f"{skill_path} frontmatter {field} has an invalid quoted value"
+            ) from error
+        if type(parsed) is not str:
+            raise CodexKitError(
+                f"{skill_path} frontmatter {field} must be a string"
+            )
+        return parsed
+    if value[0] == "'":
+        if len(value) < 2 or value[-1] != "'":
+            raise CodexKitError(
+                f"{skill_path} frontmatter {field} has an invalid quoted value"
+            )
+        return value[1:-1].replace("''", "'")
+    if value in {"|", ">", "|-", ">-", "|+", ">+", "null", "Null", "NULL", "~"}:
+        raise CodexKitError(
+            f"{skill_path} frontmatter {field} must use a non-empty one-line string"
+        )
+    comment = re.search(r"[ \t]+#", value)
+    if comment is not None:
+        value = value[: comment.start()].rstrip()
+    return value
+
+
+def _validate_skill_frontmatter(
+    content: bytes, item_id: str, skill_path: str
+) -> None:
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise CodexKitError(
+            f"{skill_path}/SKILL.md is not valid UTF-8: {error}"
+        ) from error
+    lines = text.splitlines()
+    if not lines or lines[0] != "---":
+        raise CodexKitError(
+            f"{skill_path}/SKILL.md must start with YAML frontmatter"
+        )
+    try:
+        end = lines.index("---", 1)
+    except ValueError as error:
+        raise CodexKitError(
+            f"{skill_path}/SKILL.md has unterminated YAML frontmatter"
+        ) from error
+
+    fields: dict[str, str] = {}
+    for line_number, line in enumerate(lines[1:end], start=2):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        match = FRONTMATTER_FIELD.fullmatch(line)
+        if match is None:
+            raise CodexKitError(
+                f"{skill_path}/SKILL.md frontmatter line {line_number} "
+                "must be a simple key-value field"
+            )
+        field, raw_value = match.groups()
+        if field in fields:
+            raise CodexKitError(
+                f"{skill_path}/SKILL.md frontmatter has duplicate field: {field}"
+            )
+        fields[field] = _parse_frontmatter_scalar(
+            raw_value, field, f"{skill_path}/SKILL.md"
+        )
+
+    name = fields.get("name")
+    if name != item_id:
+        raise CodexKitError(
+            f"{skill_path}/SKILL.md frontmatter name must equal catalog id "
+            f"{item_id!r}"
+        )
+    description = fields.get("description")
+    if description is None or not description.strip():
+        raise CodexKitError(
+            f"{skill_path}/SKILL.md frontmatter description must not be empty"
+        )
+
+
+def _validate_bundled_skill(
+    repo: Path, item_id: str, skill_path: str, context: str
+) -> None:
+    _, files = _read_bundled_skill_tree(repo, skill_path, context)
+    skill_file = PurePosixPath("SKILL.md")
+    if skill_file not in files:
+        raise CodexKitError(f"{context}.path SKILL.md is required")
+    if not any(
+        license_path in files
+        for license_path in (PurePosixPath("LICENSE"), PurePosixPath("LICENSE.txt"))
+    ):
+        raise CodexKitError(f"{context}.path LICENSE or LICENSE.txt is required")
+
+    _validate_skill_frontmatter(files[skill_file], item_id, skill_path)
+    for relative, content in files.items():
+        if relative.suffix.lower() != ".md":
+            continue
+        try:
+            content.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise CodexKitError(
+                f"{skill_path}/{relative} is not valid UTF-8: {error}"
+            ) from error
+
+
 def validate_catalogs(repo_arg: str | os.PathLike[str]) -> Catalogs:
     repo_input = Path(repo_arg).expanduser()
     try:
@@ -320,8 +523,13 @@ def validate_catalogs(repo_arg: str | os.PathLike[str]) -> Catalogs:
                 f"{path} has unknown top-level field(s): "
                 f"{', '.join(sorted(unknown))}"
             )
-        if type(value["schema_version"]) is not int or value["schema_version"] != 1:
-            raise CodexKitError(f"{path}.schema_version must be integer 1")
+        if (
+            type(value["schema_version"]) is not int
+            or value["schema_version"] != SCHEMA_VERSION
+        ):
+            raise CodexKitError(
+                f"{path}.schema_version must be integer {SCHEMA_VERSION}"
+            )
         items = value[spec.array_name]
         if type(items) is not list:
             raise CodexKitError(f"{path}.{spec.array_name} must be an array")
@@ -338,7 +546,7 @@ def validate_catalogs(repo_arg: str | os.PathLike[str]) -> Catalogs:
                 )
             seen_ids.add(item_id)
 
-            if spec.array_name in {"skills", "plugins"}:
+            if spec.array_name == "plugins":
                 repository = _require_nonempty_string(
                     item, "repository", context
                 )
@@ -352,11 +560,57 @@ def validate_catalogs(repo_arg: str | os.PathLike[str]) -> Catalogs:
                 )
 
             if spec.array_name == "skills":
-                skill_path = _validate_optional_string(
-                    item, "path", context, nonempty=True
+                source = _require_exact_type(item, "source", str, context)
+                if source not in {"github", "bundled"}:
+                    raise CodexKitError(
+                        f"{context}.source must be 'github' or 'bundled'"
+                    )
+                _validate_optional_string(
+                    item, "notes", context, nonempty=False
                 )
-                if skill_path is not None:
-                    _validate_relative_posix_path(skill_path, f"{context}.path")
+                if source == "github":
+                    if "repository" not in item:
+                        raise CodexKitError(
+                            f"{context} github source requires repository"
+                        )
+                    repository = _require_nonempty_string(
+                        item, "repository", context
+                    )
+                    if not GITHUB_REPOSITORY.fullmatch(repository):
+                        raise CodexKitError(
+                            f"{context}.repository must be an HTTPS github.com "
+                            "repository URL"
+                        )
+                    skill_path = _validate_optional_string(
+                        item, "path", context, nonempty=True
+                    )
+                    if skill_path is not None:
+                        _validate_relative_posix_path(
+                            skill_path, f"{context}.path"
+                        )
+                else:
+                    if "repository" in item:
+                        raise CodexKitError(
+                            f"{context} bundled source must not include repository"
+                        )
+                    if "path" not in item:
+                        raise CodexKitError(
+                            f"{context} bundled source requires path"
+                        )
+                    skill_path = _require_nonempty_string(
+                        item, "path", context
+                    )
+                    _validate_relative_posix_path(
+                        skill_path, f"{context}.path"
+                    )
+                    expected_path = f"bundled/skills/{item_id}"
+                    if skill_path != expected_path:
+                        raise CodexKitError(
+                            f"{context}.path must be exactly {expected_path}"
+                        )
+                    _validate_bundled_skill(
+                        repo, item_id, skill_path, context
+                    )
                 if "scope" in item:
                     scope = _require_exact_type(item, "scope", str, context)
                     if scope not in {"user", "project"}:

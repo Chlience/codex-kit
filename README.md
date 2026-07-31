@@ -6,8 +6,8 @@ plugins, and global instruction modules while delegating installation to Codex
 and each upstream project's supported tools.
 
 The catalog starts with a reviewed repository-level source for
-`mattpocock/skills`. Additional capabilities are added only after reviewing
-their source and desired behavior.
+`mattpocock/skills` and the bundled first-party `sjl-skill`. Additional
+capabilities are added only after reviewing their source and desired behavior.
 
 Requirements: Linux, Git, a current Codex CLI, and Python 3.10 or newer.
 Selected upstream installers may add their own runtime requirements.
@@ -47,6 +47,9 @@ then selects individual Skills from that repository.
 │   ├── skills.json
 │   ├── plugins.json
 │   └── agents.json
+├── bundled/
+│   └── skills/
+│       └── sjl-skill/
 ├── agents/
 │   └── modules/
 ├── scripts/
@@ -59,6 +62,8 @@ then selects individual Skills from that repository.
 - `catalog/skills.json` lists standalone Skill sources.
 - `catalog/plugins.json` lists Codex plugin and marketplace sources.
 - `catalog/agents.json` lists selectable global instruction modules.
+- `bundled/skills/` stores reviewed first-party Skills without making them
+  discoverable before the user selects them.
 - `agents/modules/` stores those instruction modules as ordinary Markdown.
 - `scripts/codex_kit.py` validates catalogs and safely renders the managed
   global instruction block.
@@ -66,20 +71,35 @@ then selects individual Skills from that repository.
 
 ## Catalog contracts
 
-Every catalog has `schema_version: 1`. Items use stable IDs so a user can make
+Every catalog has `schema_version: 2`. Items use stable IDs so a user can make
 an unambiguous selection.
 
-A Skill entry contains:
+A GitHub Skill entry contains:
 
 ```json
 {
   "id": "example-skill",
   "description": "What the Skill enables and when it is useful.",
+  "source": "github",
   "repository": "https://github.com/owner/repository",
   "path": "optional/path/to/skill",
   "scope": "user",
   "recommended": false,
   "notes": "Optional source-specific guidance."
+}
+```
+
+A bundled Skill entry contains:
+
+```json
+{
+  "id": "example-skill",
+  "description": "What the bundled Skill enables.",
+  "source": "bundled",
+  "path": "bundled/skills/example-skill",
+  "scope": "user",
+  "recommended": false,
+  "notes": "Optional installation or provenance guidance."
 }
 ```
 
@@ -108,12 +128,14 @@ An instruction-module entry contains:
 }
 ```
 
-Optional fields may be omitted. `scope` accepts `user` or `project` and
-defaults to `user`. IDs and plugin identifiers use lowercase kebab-case.
-Repository fields accept only complete `https://github.com/owner/repository`
-URLs. Skill paths are repository-relative POSIX paths without `..` segments.
-Instruction paths must match `agents/modules/*.md`. Unknown fields, duplicate
-JSON keys, control characters, symlinks, and reserved Codex Kit markers are
+`source` accepts `github` or `bundled`. GitHub entries require `repository`;
+bundled entries prohibit it and require the exact path
+`bundled/skills/<id>`. `scope` accepts `user` or `project` and defaults to
+`user`. IDs and plugin identifiers use lowercase kebab-case. Repository fields
+accept only complete `https://github.com/owner/repository` URLs. Skill paths
+are repository-relative POSIX paths without `..` segments. Instruction paths
+must match `agents/modules/*.md`. Unknown fields, duplicate JSON keys, control
+characters, unsafe bundled trees, symlinks, and reserved Codex Kit markers are
 rejected where applicable.
 
 For a repository containing multiple Skills, omit `path` to register it as a
@@ -125,16 +147,19 @@ the user to select exact Skill names before preparing an installation command.
 
 1. Add one catalog entry with a short description and the upstream GitHub
    repository. Do not copy a transient version number into the catalog.
-2. For a global instruction module, add its Markdown file under
+2. For a first-party Skill, place the complete licensed Skill under
+   `bundled/skills/<id>/`, audit it for private or machine-specific content,
+   and register it with `source: "bundled"`.
+3. For a global instruction module, add its Markdown file under
    `agents/modules/` and register it in `catalog/agents.json`.
-3. Validate the repository:
+4. Validate the repository:
 
    ```bash
    python3 scripts/codex_kit.py validate --repo .
    python3 -m unittest discover -s tests -v
    ```
 
-4. Review the user-facing choices and installation plan from a clean clone
+5. Review the user-facing choices and installation plan from a clean clone
    before publishing the change.
 
 ## Installation model
@@ -143,6 +168,8 @@ the user to select exact Skill names before preparing an installation command.
   default branch.
 - Repository-level Skill sources are expanded at installation time. Their
   changing upstream inventory is not copied into this repository.
+- Bundled Skills are installed from the exact checked-out Codex Kit tree. They
+  do not require a second network source and remain inactive until selected.
 - Each installation run resolves the latest default-branch commit, reviews that
   exact tree, and binds the approved transaction to the reviewed commit or
   content digest. A later run resolves the latest commit again; the catalog
@@ -179,6 +206,12 @@ the user to select exact Skill names before preparing an installation command.
   `.codex-kit.local.json`, which Git ignores.
 - System-level operations, secrets, `sudo`, and remote-script pipelines require
   separate explicit approval.
+
+## License
+
+Codex Kit and its bundled first-party content are available under the
+[MIT License](LICENSE). Linked third-party repositories retain their own
+licenses and are reviewed separately at installation time.
 
 ## References
 

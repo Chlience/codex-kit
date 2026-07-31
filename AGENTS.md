@@ -16,8 +16,15 @@ This repository bootstraps user-selected Codex skills, plugins, and global
 
 ## Repository maintenance
 
-- Keep `catalog/*.json` valid JSON with `schema_version` set to `1`.
+- Keep `catalog/*.json` valid JSON with `schema_version` set to `2`.
 - Keep catalog IDs unique within each catalog.
+- Keep selectable first-party Skills under `bundled/skills/<skill-id>/`; only
+  the bootstrap Skill belongs under `.agents/skills/`.
+- Before publishing a bundled Skill, audit it for secrets, personal data,
+  machine-specific paths, private URLs, local state, executable behavior, and
+  redistribution rights.
+- Give each bundled Skill its own license file so the license remains attached
+  when the Skill is installed independently.
 - Keep rule modules under `agents/modules/` and reference them with
   repository-relative paths.
 - Do not commit secrets, credentials, machine-specific absolute paths, or local

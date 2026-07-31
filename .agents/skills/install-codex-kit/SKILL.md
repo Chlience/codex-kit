@@ -32,7 +32,7 @@ new process.
    `catalog/agents.json`.
 3. Run `python3 scripts/codex_kit.py validate --repo <repo-root>`. Stop on any
    validation error.
-4. Require strict field types, exact allowed fields, `schema_version: 1`,
+4. Require strict field types, exact allowed fields, `schema_version: 2`,
    kebab-case IDs, GitHub HTTPS repository URLs, valid scope values, and unique
    IDs.
 5. For instruction modules, require a non-symlink regular Markdown file under
@@ -45,10 +45,13 @@ new process.
 
 Catalog item contracts:
 
-- Skill: `id`, `description`, `repository`; optional `path`, `scope`,
-  `recommended`, and `notes`.
-- A Skill entry without `path` represents a repository-level source whose
-  individual Skills require a second explicit user selection.
+- GitHub Skill: `id`, `description`, `source: "github"`, and `repository`;
+  optional `path`, `scope`, `recommended`, and `notes`.
+- A GitHub Skill entry without `path` represents a repository-level source
+  whose individual Skills require a second explicit user selection.
+- Bundled Skill: `id`, `description`, `source: "bundled"`, and
+  `path: "bundled/skills/<id>"`; optional `scope`, `recommended`, and `notes`.
+  It must not contain `repository`.
 - Plugin: `id`, `description`, `repository`; optional `marketplace`, `plugin`,
   `recommended`, and `notes`.
 - Instruction module: `id`, `description`, `path`; optional `recommended`.
@@ -66,10 +69,10 @@ checklists:
 2. Codex plugins;
 3. global `AGENTS.md` modules.
 
-For each item, show its ID, description, source, requested scope, current
-installation status, and recommendation flag. Recommendations are advisory.
-Wait for the user to choose exact IDs. Do not interpret a preselected or
-recommended item as consent.
+For each item, show its ID, description, source type, source location,
+requested scope, current installation status, and recommendation flag.
+Recommendations are advisory. Wait for the user to choose exact IDs. Do not
+interpret a preselected or recommended item as consent.
 
 Selecting a repository-level Skill source authorizes discovery only. After
 resolving and reviewing its current default-branch commit, enumerate its valid
@@ -80,7 +83,7 @@ selection installs nothing from that source.
 
 ## 3. Resolve current upstream instructions
 
-For every selected third-party item:
+For every selected GitHub item:
 
 1. Open the repository's current default branch and read its official README,
    installation documentation, manifests, and relevant Skill directory.
@@ -99,9 +102,9 @@ For every selected third-party item:
 
 For standalone Skills:
 
-- Treat a catalog entry with `path` as one selectable Skill. Treat an entry
-  without `path` as a repository-level source and install only the individual
-  upstream Skill names selected in the second checklist.
+- Treat a GitHub entry with `path` as one selectable Skill. Treat a GitHub
+  entry without `path` as a repository-level source and install only the
+  individual upstream Skill names selected in the second checklist.
 - Use Codex `$skill-installer` when it supports the selected GitHub source and
   scope.
 - Use `npx skills@latest` when the upstream recommends the Vercel Skills CLI.
@@ -120,6 +123,20 @@ For standalone Skills:
 - Install the complete Skill directory, including scripts, references, assets,
   and licenses.
 
+For bundled Skills:
+
+- Use only the validated directory from the current Codex Kit checkout. Do not
+  fetch a second copy from a remote repository.
+- Confirm that the path is exactly `bundled/skills/<id>`, the directory and all
+  contents are non-symlinks, `SKILL.md` names the same Skill, all relative
+  references remain inside the directory, and a license file is present.
+- Compute a deterministic digest of the complete directory and bind preview,
+  approval, copying, and the installation receipt to that digest.
+- Copy the complete selected directory to the approved Codex user or project
+  Skill location. Use a temporary sibling directory and an atomic rename for a
+  new destination. For an existing destination, apply the same-name conflict
+  rules and obtain approval before replacement.
+
 For plugins:
 
 - Use `codex plugin marketplace` and `codex plugin` commands when available.
@@ -133,6 +150,7 @@ Before writing, show:
 
 - exact commands;
 - resolved source commits;
+- bundled source digests;
 - destination paths;
 - files or configuration entries to create or change;
 - backups to create;
@@ -162,7 +180,8 @@ Record non-secret local details in `.codex-kit.local.json` at the repository
 root when at least one change succeeds:
 
 - selected item IDs;
-- source repository and resolved commit;
+- source type;
+- source repository and resolved commit, or bundled path and tree digest;
 - actual destination;
 - command outcome;
 - backup path;

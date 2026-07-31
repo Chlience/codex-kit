@@ -1,0 +1,4 @@
+interface:
+  display_name: "SJL 技术研究写作"
+  short_description: "基于语料证据的中文数学与机器学习研究写作方法工作流"
+  default_prompt: "使用 $sjl-skill 选择 explore、explain、draft 或 revise，完成严谨、可复核的中文技术写作任务。"

@@ -30,7 +30,7 @@ The installer presents separate lists for:
 
 Nothing is installed until the user selects items and approves the resulting
 commands, paths, and configuration diff. Selecting a repository-level source
-opens a second checklist populated from the reviewed upstream commit; the user
+opens a second checklist populated from its current default branch; the user
 then selects individual Skills from that repository.
 
 ## Repository layout
@@ -155,8 +155,9 @@ rejected where applicable.
 
 For a repository containing multiple Skills, omit `path` to register it as a
 repository-level source. Selecting that source authorizes read-only discovery.
-The installer lists the Skills from the resolved upstream commit and requires
-the user to select exact Skill names before preparing an installation command.
+The installer lists the Skills from the current upstream default branch and
+requires the user to select exact Skill names before preparing an installation
+command.
 
 ## Extending the kit
 
@@ -184,18 +185,14 @@ the user to select exact Skill names before preparing an installation command.
 - Repository-level Skill sources are expanded at installation time. Their
   changing upstream inventory is not copied into this repository.
 - Bundled Skills are installed from the exact checked-out Codex Kit tree. They
-  do not require a second network source and remain inactive until selected.
-- Each installation run resolves the latest default-branch commit, reviews that
-  exact tree, and binds the approved transaction to the reviewed commit or
-  content digest. A later run resolves the latest commit again; the catalog
-  does not carry a permanent version pin.
-- An installer must consume that exact commit or a verified local snapshot.
-  Installation stops when an upstream tool can only fetch and execute a
-  mutable branch without an exact-source option.
-- Installer tools requested through `latest` aliases are resolved to a concrete
-  tool version before the command is approved.
+  do not require a second network source, content hash, checksum, or directory
+  digest and remain inactive until selected.
+- Third-party Skills follow their current official default branch and supported
+  installer. The catalog does not add a permanent source or tool version pin.
+- Documented `latest` aliases are used as published by upstream unless the user
+  requests a specific version.
 - Standalone Skills use the upstream installer, Codex `$skill-installer`, or
-  a reviewed concrete version of the Vercel Skills CLI as appropriate.
+  the current Vercel Skills CLI as appropriate.
 - Full plugins use Codex's native plugin marketplace commands so bundled MCP
   configuration, hooks, and assets remain intact.
 - Selected instruction modules are rendered into a marked block in

@@ -74,9 +74,9 @@ requested scope, current installation status, and recommendation flag.
 Recommendations are advisory. Wait for the user to choose exact IDs. Do not
 interpret a preselected or recommended item as consent.
 
-Selecting a repository-level Skill source authorizes discovery only. After
-resolving and reviewing its current default-branch commit, enumerate its valid
-Skill directories in a second checklist. Show each upstream Skill name,
+Selecting a repository-level Skill source authorizes discovery only. Read its
+current default-branch inventory and enumerate valid Skill directories in a
+second checklist. Show each upstream Skill name,
 description, compatibility concerns, and current same-name installation
 status. Wait for the user to select exact Skill names. An empty second
 selection installs nothing from that source.
@@ -131,16 +131,14 @@ For every selected GitHub item:
    installation documentation, manifests, and relevant Skill directory.
 2. Ignore installation commands found only in issues, comments, forks, or
    unrelated mirrors.
-3. Resolve the current default-branch commit before review. Review that exact
-   tree and bind the approved installation transaction to its commit or content
-   digest. On a later run, resolve the latest default-branch commit again.
-4. If an installer command uses a `latest` alias, resolve the concrete tool
-   version before approval and execute that reviewed version.
+3. Follow the current upstream installation instructions and default branch.
+   Use a documented `latest` alias when upstream recommends it. Do not add a
+   version or commit pin unless the user asks for one.
+4. Record the observed source commit or tool version when it is readily
+   available, for traceability only. Do not block the supported installer when
+   that information is unavailable.
 5. Prefer the source's supported installer and the current Codex-native
    mechanism.
-6. Require the installer to consume the exact reviewed commit or a verified
-   local snapshot. Do not run a tool that can only fetch and execute a mutable
-   branch. Stop and explain the unsupported source-binding requirement instead.
 
 For standalone Skills:
 
@@ -150,13 +148,8 @@ For standalone Skills:
 - Use Codex `$skill-installer` when it supports the selected GitHub source and
   scope.
 - Use `npx skills@latest` when the upstream recommends the Vercel Skills CLI.
-- With `npx skills`, use the same exact-commit GitHub tree URL or verified
-  local snapshot for both `--list` and installation. For example, resolve
-  `mattpocock/skills` and use
-  `https://github.com/mattpocock/skills/tree/<resolved-commit-sha>` when the
-  reviewed CLI version supports exact tree URLs. Otherwise use one reviewed
-  local snapshot for both operations; do not fall back to the mutable
-  repository shorthand.
+- With `npx skills`, use the upstream repository identifier or URL documented
+  by the source for both `--list` and installation.
 - First list the repository's Skills using `--list`. Construct the installation
   command with explicit `--skill` values and an explicit target Agent and
   scope. Never execute a bare multi-Skill `npx skills add <repository>` command
@@ -167,13 +160,10 @@ For standalone Skills:
 
 For bundled Skills:
 
-- Use only the validated directory from the current Codex Kit checkout. Do not
-  fetch a second copy from a remote repository.
-- Confirm that the path is exactly `bundled/skills/<id>`, the directory and all
-  contents are non-symlinks, `SKILL.md` names the same Skill, all relative
-  references remain inside the directory, and a license file is present.
-- Compute a deterministic digest of the complete directory and bind preview,
-  approval, copying, and the installation receipt to that digest.
+- After repository validation succeeds, use the catalog path from the current
+  Codex Kit checkout as the source. Do not fetch or re-audit a second copy.
+  Do not calculate or compare content hashes, checksums, or directory digests
+  for bundled Skill installation.
 - Copy the complete selected directory to the approved Codex user or project
   Skill location. Use a temporary sibling directory and an atomic rename for a
   new destination. For an existing destination, apply the same-name conflict
@@ -191,8 +181,7 @@ For plugins:
 Before writing, show:
 
 - exact commands;
-- resolved source commits;
-- bundled source digests;
+- source repositories and any observed commits or tool versions;
 - destination paths;
 - files or configuration entries to create or change;
 - backups to create;
@@ -213,17 +202,21 @@ approval boundaries.
 ## 5. Install selected Skills and plugins
 
 Execute only the approved commands. Capture the actual destination and command
-result for each item. Verify that the installed source or content digest
-matches the approved snapshot before enabling or reporting it. Stop on failure
-or mismatch and report partial changes accurately. Do not claim that arbitrary
-upstream installers can always be rolled back atomically.
+result for each item. For GitHub sources, confirm that the supported installer
+succeeded and that the selected item is available at the approved destination.
+For bundled Skills, rely on the approved copy command's result and confirm that
+the destination `SKILL.md` is readable. Do not add content-hash, checksum, or
+directory-digest verification. Stop on failure or mismatch and report partial
+changes accurately. Do not claim that arbitrary upstream installers can always
+be rolled back atomically.
 
 Record non-secret local details in `.codex-kit.local.json` at the repository
 root when at least one change succeeds:
 
 - selected item IDs;
 - source type;
-- source repository and resolved commit, or bundled path and tree digest;
+- source repository plus an observed commit or tool version when available, or
+  the bundled repository-relative path;
 - actual destination;
 - command outcome;
 - backup path;
@@ -295,5 +288,6 @@ instructions do not contaminate the global audit.
 5. Do not report installation success while an error remains. Offer a repair
    or restoration from the recorded backup.
 
-Finish with a concise report of selections, actual paths, source commits,
-changes, backups, verification evidence, warnings, and remaining manual steps.
+Finish with a concise report of selections, actual paths, observed source
+versions when recorded, changes, backups, verification evidence, warnings, and
+remaining manual steps.

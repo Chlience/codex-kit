@@ -8,7 +8,7 @@
       "repository": "https://github.com/mattpocock/skills",
       "scope": "user",
       "recommended": false,
-      "notes": "Repository-level source. The upstream Codex entry point is npx skills@latest add mattpocock/skills. Resolve latest to a reviewed tool version, then use the same exact default-branch HEAD or verified local snapshot for enumeration and installation. Install only exact Skill names selected by the user for Codex and the approved scope. Include setup-matt-pocock-skills when required by the selected workflow, then run the fresh-process global conflict audit."
+      "notes": "Repository-level source. Follow the current upstream flow with npx skills@latest add mattpocock/skills. List the repository first, then install only exact Skill names selected by the user for Codex and the approved scope. Include setup-matt-pocock-skills when required by the selected workflow, then run the fresh-process global conflict audit."
     },
     {
       "id": "sjl-skill",

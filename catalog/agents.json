@@ -26,6 +26,12 @@
       "recommended": false
     },
     {
+      "id": "engineering-change-discipline",
+      "description": "Require confirmed consequential assumptions, bounded changes, contract-focused validation, and evidence-backed delivery.",
+      "path": "agents/modules/engineering-change-discipline.md",
+      "recommended": false
+    },
+    {
       "id": "git-commit-workflow",
       "description": "Review Git identity privacy at installation and use a cautious local workflow with bilingual fallback commit messages.",
       "path": "agents/modules/git-commit-workflow.md",

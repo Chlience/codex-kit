@@ -6,7 +6,7 @@ plugins, and global instruction modules while delegating installation to Codex
 and each upstream project's supported tools.
 
 The catalog starts with a reviewed repository-level source for
-`mattpocock/skills`, the bundled first-party `sjl-skill`, and five selectable
+`mattpocock/skills`, the bundled first-party `sjl-skill`, and six selectable
 global instruction modules. Additional capabilities are added only after
 reviewing their source and desired behavior.
 
@@ -78,6 +78,7 @@ then selects individual Skills from that repository.
 | `github-markdown-default` | GitHub-compatible defaults for created or substantially revised Markdown | Yes |
 | `destructive-operation-confirmation` | Exact impact review and renewed confirmation before destructive actions | Yes |
 | `first-principles-review` | Goal, assumption, risk, trade-off, and acceptance-criteria review for substantial requests | No |
+| `engineering-change-discipline` | Confirm consequential assumptions, bound engineering changes, and require evidence-backed delivery | No |
 | `git-commit-workflow` | Install-time identity privacy check, cautious local commits, and a bilingual fallback format | No |
 
 Recommendations are advisory; installation still requires an explicit user

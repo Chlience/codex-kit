@@ -3,7 +3,7 @@
   "modules": [
     {
       "id": "chinese-output-style",
-      "description": "Use direct Chinese prose and established target-domain terminology in replies and documents.",
+      "description": "Use standardized terminology, direct neutral prose, consistent labels, and evidence-bounded claims in all Chinese output.",
       "path": "agents/modules/chinese-output-style.md",
       "recommended": true
     },

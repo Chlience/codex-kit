@@ -74,7 +74,7 @@ then selects individual Skills from that repository.
 
 | Module | Purpose | Recommended |
 | --- | --- | --- |
-| `chinese-output-style` | Direct Chinese prose and target-domain technical terminology | Yes |
+| `chinese-output-style` | Standardized terminology, direct neutral prose, consistent labels, and evidence-bounded Chinese output | Yes |
 | `github-markdown-default` | GitHub-compatible defaults for created or substantially revised Markdown | Yes |
 | `destructive-operation-confirmation` | Exact impact review and renewed confirmation before destructive actions | Yes |
 | `first-principles-review` | Goal, assumption, risk, trade-off, and acceptance-criteria review for substantial requests | No |

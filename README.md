@@ -79,7 +79,7 @@ then selects individual Skills from that repository.
 | `destructive-operation-confirmation` | Exact impact review and renewed confirmation before destructive actions | Yes |
 | `first-principles-review` | Goal, assumption, risk, trade-off, and acceptance-criteria review for substantial requests | No |
 | `engineering-change-discipline` | Confirm consequential assumptions, bound engineering changes, and require evidence-backed delivery | No |
-| `git-commit-workflow` | Install-time identity privacy check, cautious local commits, and a bilingual fallback format | No |
+| `git-commit-workflow` | Identity privacy review plus independently verifiable commits with reviewed staged content and structured problem, implementation, boundary, and validation bodies | No |
 
 Recommendations are advisory; installation still requires an explicit user
 selection. The machine-dependent `rtk` shell rule is deliberately excluded

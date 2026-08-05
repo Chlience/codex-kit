@@ -33,7 +33,7 @@
     },
     {
       "id": "git-commit-workflow",
-      "description": "Review Git identity privacy at installation and use a cautious local workflow with bilingual fallback commit messages.",
+      "description": "Review Git identity privacy at installation and create independently verifiable commits with reviewed staged content and structured problem, implementation, boundary, and validation bodies.",
       "path": "agents/modules/git-commit-workflow.md",
       "recommended": false
     }

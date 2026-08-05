@@ -18,6 +18,15 @@
       "scope": "user",
       "recommended": false,
       "notes": "First-party, independent, unofficial Skill. It is not affiliated with or endorsed by Su Jianlin. Install from the reviewed Codex Kit checkout, preserve its license, compare any existing same-name Skill before replacement, and run the fresh-process global conflict audit."
+    },
+    {
+      "id": "technical-documentation-writing",
+      "description": "Create, revise, restructure, and audit task-oriented technical documentation with progressive references for core style, strict ASD-STE100 boundaries, source mapping, and reusable document templates.",
+      "source": "bundled",
+      "path": "bundled/skills/technical-documentation-writing",
+      "scope": "user",
+      "recommended": false,
+      "notes": "First-party, independent Skill derived from public documentation principles. It is not affiliated with or endorsed by ASD STEMG or Google. Install from the reviewed Codex Kit checkout, preserve its license, compare any existing same-name Skill before replacement, and run the fresh-process global conflict audit."
     }
   ]
 }

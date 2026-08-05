@@ -39,7 +39,7 @@
     },
     {
       "id": "technical-documentation-style",
-      "description": "Write task-oriented, consistent, accessible, and verifiable technical documentation using principles adapted from ASD-STE100 Issue 9 and the Google developer documentation style guide.",
+      "description": "Trigger the technical-documentation-writing Skill for substantial documentation work and enforce a compact baseline for terminology, evidence, procedures, safety, accessibility, and validation.",
       "path": "agents/modules/technical-documentation-style.md",
       "recommended": false
     }

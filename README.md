@@ -6,9 +6,10 @@ plugins, and global instruction modules while delegating installation to Codex
 and each upstream project's supported tools.
 
 The catalog starts with a reviewed repository-level source for
-`mattpocock/skills`, the bundled first-party `sjl-skill`, and seven selectable
-global instruction modules. Additional capabilities are added only after
-reviewing their source and desired behavior.
+`mattpocock/skills`, the bundled first-party `sjl-skill` and
+`technical-documentation-writing` Skills, and seven selectable global instruction
+modules. Additional capabilities are added only after reviewing their source and
+desired behavior.
 
 Requirements: Linux, Git, a current Codex CLI, and Python 3.10 or newer.
 Selected upstream installers may add their own runtime requirements.
@@ -80,11 +81,13 @@ then selects individual Skills from that repository.
 | `first-principles-review` | Goal, assumption, risk, trade-off, and acceptance-criteria review for substantial requests | No |
 | `engineering-change-discipline` | Confirm consequential assumptions, bound engineering changes, and require evidence-backed delivery | No |
 | `git-commit-workflow` | Identity privacy review plus independently verifiable commits with reviewed staged content and structured problem, implementation, boundary, and validation bodies | No |
-| `technical-documentation-style` | Task-oriented, consistent, accessible, and verifiable technical documentation based on ASD-STE100 Issue 9 and the Google developer documentation style guide | No |
+| `technical-documentation-style` | Trigger the full technical-documentation-writing Skill and enforce compact terminology, evidence, procedure, safety, accessibility, and validation rules | No |
 
 Recommendations are advisory; installation still requires an explicit user
 selection. The machine-dependent `rtk` shell rule is deliberately excluded
-from the public catalog.
+from the public catalog. The technical documentation module remains compact;
+substantial writing, restructuring, and review use the bundled
+`technical-documentation-writing` Skill when selected.
 
 ## Catalog contracts
 

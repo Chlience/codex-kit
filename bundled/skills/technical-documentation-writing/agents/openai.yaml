@@ -1,0 +1,4 @@
+interface:
+  display_name: "技术文档写作"
+  short_description: "编写、修订和审查结构清晰、可验证且便于维护的技术文档"
+  default_prompt: "使用 $technical-documentation-writing 编写、修订或审查一份面向明确读者且经过验证的技术文档。"

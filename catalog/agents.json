@@ -36,6 +36,12 @@
       "description": "Review Git identity privacy at installation and create independently verifiable commits with reviewed staged content and structured problem, implementation, boundary, and validation bodies.",
       "path": "agents/modules/git-commit-workflow.md",
       "recommended": false
+    },
+    {
+      "id": "technical-documentation-style",
+      "description": "Write task-oriented, consistent, accessible, and verifiable technical documentation using principles adapted from ASD-STE100 Issue 9 and the Google developer documentation style guide.",
+      "path": "agents/modules/technical-documentation-style.md",
+      "recommended": false
     }
   ]
 }

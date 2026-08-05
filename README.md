@@ -6,7 +6,7 @@ plugins, and global instruction modules while delegating installation to Codex
 and each upstream project's supported tools.
 
 The catalog starts with a reviewed repository-level source for
-`mattpocock/skills`, the bundled first-party `sjl-skill`, and six selectable
+`mattpocock/skills`, the bundled first-party `sjl-skill`, and seven selectable
 global instruction modules. Additional capabilities are added only after
 reviewing their source and desired behavior.
 
@@ -80,6 +80,7 @@ then selects individual Skills from that repository.
 | `first-principles-review` | Goal, assumption, risk, trade-off, and acceptance-criteria review for substantial requests | No |
 | `engineering-change-discipline` | Confirm consequential assumptions, bound engineering changes, and require evidence-backed delivery | No |
 | `git-commit-workflow` | Identity privacy review plus independently verifiable commits with reviewed staged content and structured problem, implementation, boundary, and validation bodies | No |
+| `technical-documentation-style` | Task-oriented, consistent, accessible, and verifiable technical documentation based on ASD-STE100 Issue 9 and the Google developer documentation style guide | No |
 
 Recommendations are advisory; installation still requires an explicit user
 selection. The machine-dependent `rtk` shell rule is deliberately excluded
@@ -241,5 +242,7 @@ licenses and are reviewed separately at installation time.
 - [Codex `AGENTS.md` behavior](https://learn.chatgpt.com/docs/agent-configuration/agents-md)
 - [GitHub Flavored Markdown specification](https://github.github.com/gfm/)
 - [GitHub mathematical expressions](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/writing-mathematical-expressions)
+- [ASD-STE100 Simplified Technical English, Issue 9](https://www.asd-ste100.org/assets/files/ASD-STE100_ISSUE9.pdf)
+- [Google developer documentation style guide](https://developers.google.com/style)
 - [`vercel-labs/skills`](https://github.com/vercel-labs/skills)
 - [`mattpocock/skills`](https://github.com/mattpocock/skills)
